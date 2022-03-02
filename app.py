@@ -14,8 +14,7 @@ connect_db(app)
 @app.route('/')
 def index():
     """Renders html template that includes some JS - NOT PART OF JSON API!"""
-    cupcakes = Cupcake.query.all()
-    return render_template('index.html', cupcakes=cupcakes)
+    return render_template('index.html')
 
 
 # *****************************
@@ -33,17 +32,6 @@ def list_cupcakes():
     return jsonify(cupcakes=serialized)
 
 
-@app.route('/api/cupcakes/<int:id>')
-def get_cupcake(id):
-    """Get data about a single cupcake.
-    Respond with JSON like: 
-        {cupcake: {id, flavor, size, rating, image}}
-    """
-
-    cupcake = Cupcake.query.get_or_404(id) #so we don't have to set up a 404 redirect
-    return jsonify(cupcake=cupcake.serialize()) #prints into a dictionary which JSONify can use
-
-
 @app.route('/api/cupcakes', methods=["POST"])
 def create_cupcake():
     """Creates a new cupcake and returns JSON of that created cupcake.
@@ -55,8 +43,49 @@ def create_cupcake():
         flavor=request.json['flavor'], 
         size=request.json['size'], 
         rating=request.json['rating'],
-        image=request.json['image'])
+        image=request.json['image'] or None) #find info coming in as JSON in the body
+    
     db.session.add(new_cupcake)
     db.session.commit()
-    response_json = jsonify(cupcake=new_cupcake.serialize())
-    return (response_json, 201) #return tuple w/ status code (json, status)
+    return (jsonify(cupcake=new_cupcake.serialize()), 201) #return tuple w/ status code (json, status)
+
+
+@app.route('/api/cupcakes/<int:id>')
+def get_cupcake(id):
+    """Get data about a single cupcake.
+    Respond with JSON like: 
+        {cupcake: {id, flavor, size, rating, image}}
+    """
+
+    cupcake = Cupcake.query.get_or_404(id) #so we don't have to set up a 404 redirect
+    return jsonify(cupcake=cupcake.serialize()) #prints into a dictionary which JSONify can use
+
+
+@app.route('/api/cupcakes/<int:id>', methods=["PATCH"])
+def update_cupcake(id):
+    """Update a cupcake with the id passed in the URL
+    Respond with JSON of the newly-updated cupcake, like this: 
+        {cupcake: {id, flavor, size, rating, image}}
+    """
+
+    cupcake = Cupcake.query.get_or_404(id)
+
+    cupcake.flavor = request.json.get('flavor', cupcake.flavor)
+    cupcake.size = request.json.get('size', cupcake.size)
+    cupcake.rating = request.json.get('rating', cupcake.rating)
+    cupcake.image = request.json.get('image', cupcake.image)
+
+    db.session.commit()
+    return jsonify(cupcake=cupcake.serialize())
+
+
+@app.route('/api/cupcakes/<int:id>', methods=["DELETE"])
+def delete_cupcake(id):
+    """Delete cupcake and return confirmation message.
+    Respond with JSON like {message: "Deleted"}
+    """
+
+    cupcake = Cupcake.query.get_or_404(id)
+    db.session.delete(cupcake) #delete in database
+    db.session.commit()
+    return jsonify(message="Deleted") #notify that something happened; doesn't actually show up in GET

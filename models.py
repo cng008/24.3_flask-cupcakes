@@ -20,8 +20,7 @@ class Cupcake(db.Model):
     flavor = db.Column(db.Text, nullable=False)
     size = db.Column(db.Text, nullable=False)
     rating = db.Column(db.Float, nullable=False)
-    image = db.Column(db.Text, default=DEFAULT_CUPCAKE_IMG)
-
+    image = db.Column(db.Text, nullable=False, server_default=DEFAULT_CUPCAKE_IMG)
 
     def serialize(self):
         """Serialize a cupcake SQLAlchemy obj to dictionary."""
